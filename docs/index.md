@@ -26,5 +26,24 @@ channel字段是meta channel 的消息就是一个 meta 消息，service 消息�
 
 应用可以任意创建 service channel 和 broadcast channel.
 
+### 6.1.1.1.Meta Channels
+
+Cometd 会创建 meta channels;应用不能创建新的 mata channels ，Meta channels 主要用来和应用交互 Bayeux 协议相关的一些信息，比如，握手有没有成功，或者连接被断开或者重连。
+
+### 6.1.1.2 Service Channels
+
+应用创建 service channels 用来满足服务器和客户端之间 request/response 风格的通信 （和 publish/subsribe 的风格相对应）。
+
+### 6.1.1.3 Broadcast Channels
+
+应用也可以创建 broadcase channels,它有消息主题的语义,被用于 publish/subsribe 风格的通讯,比如一个发送者想把消息广播给多个接收者
+
+# 6.2 抽象定义
+
+Cometd 实现了 web 消息系统，特别是 publish/subcribe 的场景.
+
+![](images/hub_spoke.png)
+
+
 
 
