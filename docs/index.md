@@ -42,7 +42,15 @@ Cometd 会创建 meta channels;应用不能创建新的 mata channels ，Meta ch
 
 Cometd 实现了 web 消息系统，特别是 publish/subcribe 的场景.
 
+在 publish/subcribe 消息系统里面，发布者发送分好类的消息，订阅者订阅一种或者多种消息，这样他们仅仅接受他们订阅的感兴趣消息，消息的发送这，是不知道他们发送的消息有多少人接收的。
+
+CometD是一个 hub-spoke 拓扑，在默认的配置里，就意味这有一个中心服务器，所有的客户端都连接上面
+
 ![](images/hub_spoke.png)
+
+
+在 CometD 里面，服务器接受发布者的消息，如果消息的channel 是 broadcast 的话
+
 
 
 
