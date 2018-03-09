@@ -8,6 +8,41 @@ CometD可以利用WebSocket(因为它是最高效的web消息传递协议)，而
 
 CometD项目提供了Java和JavaScript库，允许您以简单和可移植的方式编写低延迟、服务器端、事件驱动的web应用程序。因此，您可以将精力集中在应用程序的业务方面，而不必担心诸如传输(HTTP或WebSocket)、可伸缩性和健壮性等底层细节。CometD库已经提供了这些的特性。
 
+3.安装
+================================
+3.1.要求与依赖
+================================
+为了运行CometD应用程序，您需要Java开发工具包(JDK)-version 7.0或更高版本，以及一个兼容的Servlet 3.0或更高的Servlet容器，如Jetty。
+
+CometD的实现依赖于很少的Jetty库，比如Jetty-util-ajax-<version>.jar及其他。这些Jetty依赖通常被打包在应用程序的WEB-INF/lib目录中的.war文件中，不需要部署应用程序。Jetty中的war文件:基于cometd的应用程序将在任何其他兼容的Servlet 3.0或更高的Servlet容器中以同样的方式工作。
+
+当前的Jetty版本CometD依赖默认为:
+
+	<jetty-version>9.2.22.v20170606</jetty-version>
+	<!--<jetty-version>9.3.21.v20170918</jetty-version>-->
+	<!--<jetty-version>9.4.7.v20170914</jetty-version>-->
+
+从Jetty 9.2.x开始，可以使用不同的Jetty版本来运行CometD 。您可以找到如何使用不同的Jetty版本构建CometD的示例，如何使用不同的Jetty版本运行CometD演示，以及如何使用不同的Jetty版本创建web应用程序。
+
+3.2.下载与安装
+================================
+你可以从[http://download.cometd.org/](http://download.cometd.org/)下载CometD。
+
+然后在您选择的目录中解压CometD:
+
+	$ tar zxvf cometd-<version>-distribution.tgz
+	$ cd cometd-<version>/
+
+3.3.运行DEMOS
+================================
+CometD Demos包括：
+
+- 三个完整的聊天应用程序(一个是与Dojo一起开发的，一个是jQuery的，一个是Angular1)；
+- 包括：消息确认、重载、timesync和时间戳等的示例；
+- 一个如何向特定用户发送私有消息的示例；
+- 集群拍卖演示(使用Oort集群)。
+
+
 6.概念和架构
 ================================
 CometD 工程实现了多种 Comet 技术 来提供可伸缩的web消息系统，它可以通过HTTP或者其他各种web协议，比如websocket
