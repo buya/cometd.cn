@@ -10,7 +10,7 @@ CometD项目提供了Java和JavaScript库，允许您以简单和可移植的方
 
 3.安装
 ================================
-###3.1.要求与依赖
+### 3.1.要求与依赖
 为了运行CometD应用程序，您需要Java开发工具包(JDK)-version 7.0或更高版本，以及一个兼容的Servlet 3.0或更高的Servlet容器，如Jetty。
 
 CometD的实现依赖于很少的Jetty库，比如Jetty-util-ajax-<version>.jar及其他。这些Jetty依赖通常被打包在应用程序的WEB-INF/lib目录中的.war文件中，不需要部署应用程序。Jetty中的war文件:基于cometd的应用程序将在任何其他兼容的Servlet 3.0或更高的Servlet容器中以同样的方式工作。
@@ -23,7 +23,7 @@ CometD的实现依赖于很少的Jetty库，比如Jetty-util-ajax-<version>.jar�
 
 从Jetty 9.2.x开始，可以使用不同的Jetty版本来运行CometD 。您可以找到如何使用不同的Jetty版本构建CometD的示例，如何使用不同的Jetty版本运行CometD演示，以及如何使用不同的Jetty版本创建web应用程序。
 
-###3.2.下载与安装
+### 3.2.下载与安装
 你可以从[http://download.cometd.org/](http://download.cometd.org/)下载CometD。
 
 然后在您选择的目录中解压CometD:
@@ -31,7 +31,7 @@ CometD的实现依赖于很少的Jetty库，比如Jetty-util-ajax-<version>.jar�
 	$ tar zxvf cometd-<version>-distribution.tgz
 	$ cd cometd-<version>/
 
-###3.3.运行DEMOS
+### 3.3.运行DEMOS
 CometD Demos包括：
 
 - 三个完整的聊天应用程序(一个是与Dojo一起开发的，一个是jQuery的，一个是Angular1)；
@@ -39,7 +39,7 @@ CometD Demos包括：
 - 一个如何向特定用户发送私有消息的示例；
 - 集群拍卖演示(使用Oort集群)。
 
-#####3.3.1.使用MAVEN运行DEMOS
+##### 3.3.1.使用MAVEN运行DEMOS
 如果你想看看CometD演示/或者想尝试您的应用程序，建议以这种模式的运行CometD演示,但它不是推荐的方式来部署一个CometD在生产中的应用。请参阅下一节，了解如何在生产中部署CometD应用程序。
 
 Maven要求您设置JAVA_HOME环境变量以指向您的JDK安装。
@@ -64,14 +64,14 @@ Maven要求您设置JAVA_HOME环境变量以指向您的JDK安装。
 ----------
  - 注意：使用Jetty9.2.x运行CometD要求JDK7版本，使用Jetty9.3.x或更高版本要求至少JDK8.
 
-###3.4.部署CometD应用程序
+### 3.4.部署CometD应用程序
 当您开发CometD应用程序时，您将开发一个标准的Java EE Web应用程序，然后将其打包成一个war文件。您可以遵循入门部分或CometD教程，以了解如何构建和打包CometD应用程序。
 
 一旦您将CometD应用程序打包为一个war文件，您可以将其部署到任何支持Servlet 3.0或更高版本的Servlet容器中。
 
 请参阅本节以获取进一步的信息，以及有关在Servlet 3.0(或更大)容器上部署的具体说明。
 
-#####3.4.1.在独立的Jetty中部署CometD应用程序
+##### 3.4.1.在独立的Jetty中部署CometD应用程序
 下面的说明描述了运行CometD应用程序所需的非常小的Jetty设置。有关配置Jetty的详细信息，请参阅官方Jetty文档。
 
 按照以下步骤将CometD应用程序部署到Jetty中。这些指令对于Unix/Linux操作系统是有效的，但是可以很容易地翻译为Windows操作系统。
@@ -115,7 +115,7 @@ Maven要求您设置JAVA_HOME环境变量以指向您的JDK安装。
 
 最后用一个命令启动Jetty，它部署您的.war文件，并激活您的CometD应用程序。
 
-#####3.4.2.使用嵌入式Jetty部署CometD应用程序
+##### 3.4.2.使用嵌入式Jetty部署CometD应用程序
 您还可以通过编程方式部署CometD应用程序，使用Jetty api将您的web应用程序嵌入到您将从命令行开始的普通Java应用程序中。
 
 下面你可以找到一个{github}/cometd-demo/src/test/java/org/cometd/demo/Demo.java[示例]展示了如何建立支持HTTP、HTTPS和WebSocket传输的嵌入式Jetty和CometD:
@@ -207,17 +207,17 @@ Maven要求您设置JAVA_HOME环境变量以指向您的JDK安装。
     ...
 	</dependencies>
 
-#####3.4.3.使用另一个Servlet容器运行演示
+##### 3.4.3.使用另一个Servlet容器运行演示
 将CometD应用程序部署到不同的Servlet容器中需要做的是与上面描述的Jetty类似的步骤。
 
 对于您选择的Servlet容器，请参考具体的Servlet容器配置手册，来了解如何部署CometD应用程序.war文件。
 
 4.故障诊断
 ================================
-###4.1.日志
+### 4.1.日志
 当CometD不起作用时，您要做的第一件事是启用调试日志记录。这是有帮助的，因为通过阅读调试日志，您可以更好地了解系统中正在发生的事情(并且仅这一点就可以为您提供解决问题所需的答案)，并且CometD开发人员可能需要调试日志来帮助您。
 
-#####4.1.1.启用JavaScript库中的调试日志
+##### 4.1.1.启用JavaScript库中的调试日志
 要在JavaScript客户端库中启用调试日志(请参阅JavaScript库部分)，您必须在cometd的配置对象中配置logLevel字段为“debug”值(请参阅JavaScript库配置部分的其他配置选项)：
 
 		cometd.configure({
@@ -231,7 +231,7 @@ CometD JavaScript库使用window控制台对象输出日志语句。
 
 > 注意：Internet Explorer没有和其他浏览器一样定义window控制台对象，导致CometD不能在JavaScript控制台上输出日志，这取决于Internet Explorer版本。
 
-#####4.1.2.在Java服务器库中启用调试日志记录
+##### 4.1.2.在Java服务器库中启用调试日志记录
 CometD Java库(客户机和服务器)都使用SLF4J作为日志框架。Java服务器库使用SLF4J api，但是它不绑定到任何特定的日志实现。您必须选择要使用的实现。默认情况下，SLF4J附带了一个简单的绑定，它不记录在调试级别生成的语句。
 
 因此，您必须使用更高级的绑定(如Log4J或Logback)配置SLF4J。了解如何使用高级绑配置日志请参考SLF4J文档和绑定实现文档。
