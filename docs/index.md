@@ -573,7 +573,7 @@ Cometd 会创建 meta channels;应用不能创建新的 mata channels ，Meta ch
 
 一个模板channel不能同时是一个通配符channel，因此`/foo/{id}/*` 或者 `/foo/{var}/**`channel是无效的。
 
-# 6.2 抽象定义
+# 6.2 高级抽象
 
 Cometd 实现了 web 消息系统，特别是 publish/subcribe 的场景.
 
@@ -592,6 +592,79 @@ CometD是一个 hub-spoke 拓扑，在默认的配置里，就意味这有一个
 
 # 6.3. 具体定义
 
+接下来的章节将更进一步的研究CometD是如何工作的。
+
+现在我们清楚地知道CometD的核心是一个通过Bayeux协议进行交互的client/server 系统。
+
+在CometD的实现中，使用half-object plus protocol模式捕获取client/server的通信：当客户端half-object对象建立了一个与服务端的通信管道后，相应的服务端的half-object也被创建，它们两个就可以进行通信了。CometD使用了这种模式的变种，因为需要对传输消息进行传输的抽象。这种传输是基于Http协议的，当然在最近的CometD版本中也可以基于WebSocket协议（你也可以插入更多的协议）。
+
+广义上讲，*client*是由client half-object和client transport组成的，而*server*则是更复杂的实体组合，包括server half-objects和server transports。
+
+6.3.1 会话Sessions
+------------------
+
+会话在CometD中是一个核心概念。它们是通信协议中所涉及的half-objects的表现。
+
+![](images/hopp.png)
+
+有三种会话：
+
+- *Clinet sessions*客户端会话－是客户端的client half-object。 客户端会话在JavaScript中是由`org.cometd.CometD`对象表示的，在JAVA中是由`org.cometd.bayeux.client.ClientSession`类表示（其实更多的是由它的子类`org.cometd.bayeux.client.BayeuxClient`表示）。客户端创建一个client session来与服务端建立起Bayeux通信，这样客户端就可以发布和接收消息了。
+- *Server sessions*服务端会话－是服务端的server half-object。服务端会话在服务端是由`org.cometd.bayeux.server.ServerSession`类表示的；它们与客户端会话是一一匹配的。当一个客户端创建了一个client session后，它最初不会关联一个对应的server session。仅当client session与服务端建立了Bayeux通信后，服务端才创建它相应的server session，以及两个half-objects的连接。每个server session有一个消息队列（message queue）。消息被发布到一个channel后，必须要投递到订阅了该channel的远程client sessions。消息首先进入server session的消息队列，然后投递到相应的client session。
+- *Local sessions*本地会话－是处于服务端的client half-object，由`org.cometd.bayeux.server.LocalSession`类表示。本地会话可以被认为是生存于服务端的客户。他们不代表远程客户端，而是一个server-side client（服务端客户）。本地会话可以订阅channel，并像client session一样发布消息。服务端只认识服务端会话，而创建服务端会话唯一的方式是首先要创建相应的客户端会话，然后与服务端建立起Bayeux通信。出于这个原因，在服务端便有了额外的本地会话的概念。local session是生存于服务端的client session，因此它是服务端本地会话。例如，假设一个远程客户端每当状态有变化时发送一条消息。其它远程客户端订阅了该channel，并接收那些状态更新消息。但是，如果在接收到远程客户端状态更新后，你想要在服务端执行一些动作怎么办呢？那么你需要一个存在于服务端的等价的远程客户端，这就是local session。
+
+服务端的各服务通过一个local session来关联。在创建服务端的服务时，local session 与之握手并创建相应的server sesion half-object，因而服务端对同样的方式对待客户端会话与本地会话。服务端将消息发送给所有订阅了该channel的服务端会话，无论他们是来自远程客户端会话还是本地会话。
+
+有关更多的服务信息，请查看服务章节
+
+6.3.2. Server服务
+-----------------
+*server*使用`org.cometd.bayeux.server.BayeuxServer`来表示。BayeuxServer对象作用包括：
+
+- server sessions的Repository，参见会话章节
+- server transports的Repository－用`org.cometd.bayeux.server.ServerTransport`类来表示。server transport是一个服务端的组件，用于处理与客户端通信的细节。包话HTTP server transports，WebSocket server transport，你也可以添加其他类型的。Server transports抽象了通信细节，应用只要知道Bayeux消息即可，而无需关心他们是如何到达服务端的。
+- server channels的Repository－ 使用`org.cometd.bayeux.server.ServerChannel`类表示。server channel是channel在服务端的表示；它可以接收和发布Bayeux消息。
+- *extensions*的Repository－使用`org.cometd.bayeux.server.BayeuxServer.Extension`类表示。Extensions扩展允许应用程序使用Bayeux协议进行交互，如修改，删除或重载Bayeux消息。extensions的更多信息请参阅extensions章节。
+- 授权认证中心，通过一个安全策略实例－`org.cometd.bayeux.server.SecurityPolicy`类来表示。CometD询问安全策略以授权任何服务端的敏感操作。例如握手，创建channel，订阅channel，发布channel。应用程序可以提供他们自己的安全策略，以实现它们自己的授权逻辑。有关安策略更多的信息，请参阅authorization授权章节。
+- 授权者－使用`org.cometd.bayeux.server.SecurityPolicy`类表示，允许你应用更细粒度的授权策略。进一步的授权者信息，参阅authorizers章节。
+- 消息处理器，用于协调服务端传输、扩展、安全策略的工作，以及实现消息流算法(参见消息处理部分)，允许应用程序与消息和通道交互以实现其应用程序逻辑。
+
+6.3.3. Listeners监听器
+---------------------
+应用程序使用监听器与session、channel、及server进行交互。在Java与JavaScript的API中，允许应用程序注册各种监听器来接收相应事件的通知。您可以将扩展、安全策略和授权程序看作特殊类型的监听器。以后的章节我们也将这样看待。
+
+### 6.3.3.1. Client Sessions and Listeners
+
+客户端会话监听器的作用包括：
+
+- 通过`ClientSession.addExtension(ClientSession.Extension)`接口你可以为client session添加extension，用于session发送和到达的出入消息进行交互。
+- 一个client session就是一个channel的repository；你可以通过`ClientSession.getChannel(String).addListener(ClientSessionChannel.MessageListener)`接口给一个channel添加消息监听器，以当消息到达特定的channel时来通知你。
+
+### 6.3.3.2. Servers and Listeners
+
+在服务端，模式类似，但更丰富。
+
+- 你可以通过`BayeuxServer.addExtension(BayeuxServer.Extension)`接口为所有流经服务端的消息的`BayeuxServer`实例添加extension。
+- `BayeuxServer`允许你通过`BayeuxServer.addListener(BayeuxServer.ChannelListener)`接口添加接收创建或销毁channel通知的监听器，通过`BayeuxServer.addListener(BayeuxServer.SessionListener)`接口添加接收创建或销毁server session通知的监听器。
+- `ServerChannel`允许你通过`ServerChannel.addAuthorizer(Authorizer)`接口添加授权者，通过`ServerChannel.addListener(ServerChannel.MessageListener)`接口添加接收消息抵达channel通知的监听器，通过`ServerChannel.addListener(ServerChannel.SubscriptionListener)`接口添加接收客户端订阅/取消订阅channel通知的监听器。
+- `ServerSession`允许你通过`ServerSession.addExtension(ServerSession.Extension)`接口为流经服务端的消息添加extension。
+- `ServerSession`允许你通过`ServerSession.addListener(ServerSession.RemoveListener)`接口添加接收到会话被移除通知的监听器，例如由于客户端断连，或者由于客户端遗失导致的相应的server session的服务过期。
+- `ServerSession`允许你通过`ServerSession.addListener(ServerSession.QueueListener)`接口添加监听器，以监听server session的消息队列的动态，如可以探测到某消息被加入队列中；或通过`ServerSession.addListener(ServerSession.MaxQueueListener)`接口添加探测队列中消息是否超过最大数量的监听器，通过`ServerSession.addListener(ServerSession.DeQueueListener)`接口添加探测队列准备发送的监听器。
+- `ServerSession`允许你通过`ServerSession.addListener(ServerSession.MessageListener)`添加接收server session接收消息（任何channel）通知的监听器。
+
+6.3.4. Message Processing消息处理
+-------------------------
+本章节描述客户端与服务端之间的消息处理。通过下面的图片来理解组成客户端与服务端的详细组件。
+
+![](images/hopp2.png)
+
+当一个客户端要发送消息，它是使用客户端的channel来发布它们。客户端通过`ClientSession.getChannel(String)`接口，来从client session中获取client channel。消息首先经过各extension的逐个处理，如果某extension拒绝处理消息，那么该消息会被删除，不会发送到服务端。extension处理完毕消息后，将传递到client transport。
+
+client transport将消息转换为JSON格式（Java客户端中，这一步是由`JSONContext.Client`实例实施的，详见JSON章节），然后与server transport建立起管道（conduit），作为transport-specific envelope（例如：HTTP请求或者WebSocket消息）通过管道发送JSON字符串。
+
+envelope抵达服务端后，server transport接收到它们。server transport将这些JSON格式的消息转换回消息对象（通过`JSONContext.Server`实例，详见JSON章节），然后将它们传递给`BayeuxServer`实例进行处理。
+
+`BayeuxServer`使用下面的步聚来处理每个消息：
 
 
 
