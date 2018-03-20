@@ -666,6 +666,51 @@ envelope抵达服务端后，server transport接收到它们。server transport�
 
 `BayeuxServer`使用下面的步聚来处理每个消息：
 
+1. 调用`BayeuxServer`的extension（通过`rcv()`或`rcvMeta()`方法）；如果某extension拒绝处理，向客户端返回一个答复，表示此消息已被删除，并不再进一步处理该消息。
+2. 调用`ServerSession`的extension（通过`rcv()`或`rcvMeta()`方法,仅当此客户端存在对应的`ServerSession`时）；如果某extension拒绝处理，向客户端返回一个答复，表示此消息已被删除，并不再进一步处理该消息。
+3. 调用安全策略与授权者的认证授权检查；如果认证被拒绝，向客户端返回失败的回复，并不再进一步处理该消息。
+4. 调用server channel监听器；应用程序为server添加server channel listener，提供了在发送给所有订阅者（前提是一个广播消息）之前的最后一次修改消息的机会。所有订阅者都可以看到server channel listener对消息的修改，就如是发布者自己发送了已修改过的消息一样。经过server channel listener的处理，消息被冻结，不会再被修改。应用程序不必关心冻结细节及步聚，因为API会解释消息是否可以修改：API有一个表示消息是否可以修改的参数的接口。到这一步，就是非广播消息的最后处理步聚了，然后即结束它在服务端的旅程。
+5. 如果消息是一个广播消息，消息继续由`BayeuxServer`的extension们（通过send()或sendMeta()方法）传递，然后对于订阅了channel的每个server session，消息通过`ServerSession`的extension传递（通过send()和sendMeta()方法）。
+6. 如果消息是一个广播消息，对于订阅了channel的每个server session，消息传经`ServerSession`监听器，在这里session拥有最后丢弃消息的机会；然后调用session queue监听器(`MaxQueueListener` 和 `QueueListener`)，最后消息被添加到server session队列中被分发出去。
+7. 如果消息是一个lazy message（详见lazy message章节），它将择机第一时间发送，否则消息会立即发出去。如果是server session与远程client session相对应的排队的消息，则会分配一个线程通过server transport将消息邮送至消息队列。server transport消费server session的消息队列，将消息转换为JSON，并将它们作为transport-specific envelopes（如HTTP响应或WebSocket消息）发送至管道中。否则是server session与local session相对应的排队中的消息，则队列中的消息直接邮送至local session。
+8. 对于广播/非广播消息，都会创建一个应答消息，并经由`BayeuxServer`extension和`ServerSession`extension（通过`send()`或`sendMeta()`方法）传递。传递到server transport，通过`JSONContext.Server`实例（详见JSON章节）将消息转换为JSON，然后作为一个transport-specific envelope（如HTTP响应或WebSocket消息）发送至管道中。
+9. envelope返回到客户端，由client transport来接收它。client transport将消息从JSON格式转换回消息对象，在Java客户端中是通过`JSONContext.Client`实例（详见JSON章节）实现的。
+10. 每个消息传递到extension（通过`send()`或`sendMeta()`方法），然后channel监听器及订阅者会收到消息通知。
+
+整个从客户端到服务端，再回到客户端的流程现在就完成了。
+
+6.3.5. 线程
+--------------------
+当服务端接收到Bayeux消息后，会指派一个线程来处理消息，进而该线程会调用服务端的CometD监听器。CometD的实现不会再启动一个线程来调用服务端的监听器；通过这种方式使线程模型保持得很简洁，并且与Servlet的线程模型非常相似。
+
+CometD的实现还依赖于周期或延时的执行定时任务。这些定时任务的执行可能会调用服务端的CometD监听器，尤其是`BayeuxServer.SessionListener#sessionRemoved`和`ServerSession.RemoveListener`。
+
+由于Bayeux客户端是使用了有限数量的连接来与服务端进行交互。如果一个发送至服务端的消息在一个连接上需要很长的时间来处理，客户端可能会在这个连接上发送额外的消息，但直到前一个消息处理完成后才会被处理。
+
+因此，非常重要的是如果应用程序知道一个消息可能会触发一个很耗时的任务（例如一次数据库查询），它应该在单独的一个线程中执行。
+
+service服务（详见java server services章节）是建立服务端监听器是一种简单的方法，但与通常的服务端监听器共享相同的线程模型：如果他们需要执行耗时任务，那么需要在单独的线程中执行，例如：
+
+	@Service
+	public class MyService {
+	    @Inject
+	    private BayeuxServer bayeuxServer;
+	    @Session
+	    private LocalSession localSession;
+	
+	    @Listener("/service/query")
+	    public void processQuery(final ServerSession remoteSession, final ServerMessage message) {
+	        new Thread() {
+	            public void run() {
+	                Map<String, Object> data = performTimeConsumingTask(message);
+	
+	                // Send data to client once the time consuming task is finished
+	                remoteSession.deliver(localSession, message.getChannel(), responseData);
+	            }
+	        }.start();
+	    }
+	}
+
 
 
 
